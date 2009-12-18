@@ -6,7 +6,7 @@ use Carp;
 
 =head1 NAME
 
-CGI::Application::Plugin::PageLookup::Authentication - [One line description of module's purpose here] 
+CGI::Application::Plugin::PageLookup::Authentication - Allow a template to check that it is only used by authenticated run modes
 
 =head1 VERSION
 
@@ -18,106 +18,94 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
+If using L<HTML::Template>, then to protect a template include
+
+    <TMPL_VAR NAME="guard.enforce_protection">
+
+Then, if using L<CGI::Application::Plugin::PageLookup>, the following would have to be added to the list 
+of smart objects
+
+    guard => 'CGI::Application::Plugin::PageLookup::Authentication',
+
+Otherwise the code would be something like:
+
+    use CGI::Application;
+    use CGI::Application::Plugin::Authentication;
     use CGI::Application::Plugin::PageLookup::Authentication;
 
-=for author to fill in:
-    Brief code example(s) here showing commonest usage(s).
-    This section will be as far as many users bother reading
-    so make it as educational and exeplary as possible.
-  
-  
+    my auth_runmode {
+	my $self = shift;
+	my $guard = CGI::Application::Plugin::PageLookup::Authentication->new($self);
+	my $template = $self->load_tmpl('auth_runmode.tmpl');
+	$template->param(guard=>$guard);
+	return $template->output;
+    }
+
 =head1 DESCRIPTION
 
-=for author to fill in:
-    Write a full description of the module and its features here.
-    Use subsections (=head2, =head3) as appropriate.
-
+    An L<HTML::Template> helper class that assumes the presence of L<CGI::Application::Plugin::Authentication>
+    and is intended to mark a given template as requiring authentication. If the current user is authenticated,
+    a simple HTML comment will be returned; otherwise the function croaks. This ensures that the template can only
+    be used after successful authentication. This makes perfect sense in, and is 
+    motivated by, L<CGI::Application::Plugin::PageLookup> where a run mode is not that granular and the object 
+    will be created automatically if it is used by the template.
 
 =head1 INTERFACE 
 
-=for author to fill in:
-    Write a separate section listing the public components of the modules
-    interface. These normally consist of either subroutines that may be
-    exported, or methods that may be called on objects belonging to the
-    classes provided by the module.
+=head2 new
+
+A constructor following the requirements set out in L<CGI::Application::Plugin::PageLookup>.
 
 =cut
 
-=head2 function1
+sub new {
+    my $class = shift;
+    my $self = {};
+    $self->{cgiapp} = shift;
+    bless $self, $class;
+    return $self;
+}
+
+=head2 enforce_protection
+
+This will return a benign comment if the user is authenticated but will croak otherwise.
 
 =cut
 
-sub function1 {
+sub enforce_protection {
+    my $self = shift;
+    unless ($self->{cgiapp}->authen->is_protected_runmode($self->{cgiapp}->get_current_runmode())) {
+	croak "Attempt to bypass authentication on protected template";
+    }
+    return "<!-- AUTHENTICATED -->\n";
 }
 
 =head1 DIAGNOSTICS
 
-=for author to fill in:
-    List every single error and warning message that the module can
-    generate (even the ones that will "never happen"), with a full
-    explanation of each problem, one or more likely causes, and any
-    suggested remedies.
-
 =over
 
-=item C<< Error message here, perhaps with %s placeholders >>
+=item C<< Attempt to bypass authentication on protected template >>
 
-[Description of error here]
-
-=item C<< Another error message here >>
-
-[Description of error here]
-
-[Et cetera, et cetera]
+This implies that a protected template was used by an unprotected run mode.
 
 =back
 
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
-=for author to fill in:
-    A full explanation of any configuration system(s) used by the
-    module, including the names and locations of any configuration
-    files, and the meaning of any environment variables or properties
-    that can be set. These descriptions must also include details of any
-    configuration language used.
-  
 CGI::Application::Plugin::PageLookup::Authentication requires no configuration files or environment variables.
-
 
 =head1 DEPENDENCIES
 
-=for author to fill in:
-    A list of all the other modules that this module relies upon,
-    including any restrictions on versions, and an indication whether
-    the module is part of the standard Perl distribution, part of the
-    module's distribution, or must be installed separately. ]
-
-None.
-
+There is a fundamental dependency on L<CGI::Application::Plugin::Authentication> and ultimately L<CGI::Application>.
+Realistically I can see no reason not to assume the presence of L<CGI::Application::Plugin::PageLookup> from a documentation
+and testing point of view, but as far as I can see it could be useful in some variant cases.
 
 =head1 INCOMPATIBILITIES
 
-=for author to fill in:
-    A list of any modules that this module cannot be used in conjunction
-    with. This may be due to name conflicts in the interface, or
-    competition for system or program resources, or due to internal
-    limitations of Perl (for example, many modules that use source code
-    filters are mutually incompatible).
-
 None reported.
 
-
 =head1 BUGS AND LIMITATIONS
-
-=for author to fill in:
-    A list of known problems with the module, together with some
-    indication Whether they are likely to be fixed in an upcoming
-    release. Also a list of restrictions on the features the module
-    does provide: data types that cannot be handled, performance issues
-    and the circumstances in which they may arise, practical
-    limitations on the size of data sets, special cases that are not
-    (yet) handled, etc.
 
 No bugs have been reported.
 
