@@ -1,2 +1,5 @@
 0.01	12-12-2009
 	In development
+
+0.02	26-12-2009
+	Added tests for the case where a CODE ref becomes the run mode and fixed.

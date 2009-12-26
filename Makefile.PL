@@ -10,6 +10,7 @@ my %conf = (
     PL_FILES            => {},
     PREREQ_PM => {
         'Test::More' => 0,
+	'DBI'=>0,
 	'HTML::Template::Pluggable' => 0,
 	'Test::Differences' => 0,
 	'CGI::Application::Plugin::PageLookup' => '1.6',

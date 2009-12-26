@@ -1,0 +1,17 @@
+<html>
+  <head>
+	<title>Test Form</title>
+	<TMPL_VAR NAME="guard.enforce_protection">
+  </head>
+  <body>
+  My Home Directory is <TMPL_VAR NAME=HOME>
+  <p>
+  My Path is set to <TMPL_VAR NAME=PATH>
+  <form action="/admin/form" method="post">
+        <fieldset>
+             <input type="submit" value="Submit"/>
+	     <TMPL_IF NAME="err__"><TMPL_VAR NAME="err_test_input"></TMPL_IF><input maxlength="10" value="firstvalue" name="test_input" />
+	</fieldset>
+  </form>
+  </body>
+  </html>

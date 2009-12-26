@@ -17,3 +17,4 @@ t/prereq.t
 t/templ/test.tmpl
 t/templ/testG.tmpl
 t/templ/testN.tmpl
+t/templ/form.tmpl

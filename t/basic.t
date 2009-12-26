@@ -15,7 +15,7 @@ BEGIN {
 	@handles  = Test::Database->handles({dbd=>'SQLite'},{dbd=>'mysql'});
 
 	# plan the tests
-	plan tests => 1 + 14 * @handles;
+	plan tests => 1 + 18 * @handles;
 	
 	use_ok( 'CGI::Application::Plugin::PageLookup' );
 }
@@ -53,11 +53,15 @@ for my $handle (@handles) {
        $dbh->do("insert into  cgiapp_pages (pageId, lang, internalId, home, path) values('test1', 'en', 0, 'HOME', 'PATH')");
        $dbh->do("insert into  cgiapp_pages (pageId, lang, internalId, home, path) values('test2', 'en', 1, 'HOME1', 'PATH1')");
        $dbh->do("insert into  cgiapp_pages (pageId, lang, internalId, home, path) values('test3', 'en', 2, 'HOME1', 'PATH1')");
+       $dbh->do("insert into  cgiapp_pages (pageId, lang, internalId, home, path) values('form', 'en', 3, 'HOME1', 'PATH1')");
+       $dbh->do("insert into  cgiapp_pages (pageId, lang, internalId, home, path) values('process', 'en', 4, 'HOME1', 'PATH1')");
        $dbh->do("insert into  cgiapp_pages (pageId, lang, internalId, home, path) values('en/404', 'en', 404, 'HOME1', 'PATH1')");
        $dbh->do("insert into  cgiapp_lang (lang) values('en')");
        $dbh->do("insert into  cgiapp_structure(internalId, template, changefreq) values(0,'t/templ/test.tmpl', NULL)");
        $dbh->do("insert into  cgiapp_structure(internalId, template, changefreq) values(1,'t/templ/test.tmpl', NULL)");
        $dbh->do("insert into  cgiapp_structure(internalId, template, changefreq) values(2,'t/templ/testG.tmpl', NULL)");
+       $dbh->do("insert into  cgiapp_structure(internalId, template, changefreq) values(3,'t/templ/form.tmpl', NULL)");
+       $dbh->do("insert into  cgiapp_structure(internalId, template, changefreq) values(4,'t/templ/process.tmpl', NULL)");
        $dbh->do("insert into  cgiapp_structure(internalId, template, changefreq) values(404,'t/templ/testN.tmpl', NULL)");
 
        {
@@ -350,7 +354,7 @@ EOS
 {
         local $params->{pageid} = 'test3';
         my $app = TestApp->new(PARAMS=>$params);
-        $app->query(CGI->new({authen_username => 'user1', authen_password => '123', 'rm' => 'pagelookup_rm'}));
+        $app->query(CGI->new({authen_username => 'user1', 'rm' => 'pagelookup_rm'}));
         Test::Exception::throws_ok( sub {$app->run}, qr/Attempt to bypass authentication on protected template/, 'bypassing authentication');
 }
 
@@ -381,9 +385,78 @@ EOS
                 'TestApp, authentication success'
         );
 }
+
+{
+my $html=<<EOS
+<html>
+  <head>
+	<title>Test Form</title>
+	<!-- AUTHENTICATED -->
+
+  </head>
+  <body>
+  My Home Directory is HOME1
+  <p>
+  My Path is set to PATH1
+  <form action="/admin/form" method="post">
+        <fieldset>
+             <input type="submit" value="Submit"/>
+	     <input maxlength="10" value="firstvalue" name="test_input" />
+	</fieldset>
+  </form>
+  </body>
+  </html>
+EOS
+;
+
+        local $params->{pageid} = 'form';
+        my $app = TestApp->new(PARAMS=>$params);
+        $app->query(CGI->new({authen_username => 'user1', authen_password => '123', 'rm' => 'admin_lookup_rm'}));
+        response_like(
+                $app,
+                qr{^Set-Cookie: MYAuthCookie=\w{1,2000}%3D%3D; path=/\|Date: \w{3}, \d{2} \w{3} \d{4} \d{1,2}:\d{2}:\d{2} GMT\|Encoding: utf-8\|Content-Type: text/html; charset=utf-8$},
+                $html,
+                'TestApp, authentication success'
+        );
+}
+
+{
+my $html=<<EOS
+<html>
+  <head>
+\t<title>Test Form</title>
+\t<!-- AUTHENTICATED -->
+
+  </head>
+  <body>
+  My Home Directory is HOME1
+  <p>
+  My Path is set to PATH1
+  <form action="/admin/form" method="post">
+        <fieldset>
+             <input value="Submit" type="submit" />
+\t     <span class="dfv-errors">Missing</span><input maxlength="10" value="firstvalue" name="test_input" />
+\t</fieldset>
+  </form>
+  </body>
+  </html>
+EOS
+;
+
+        my $app = TestApp->new(PARAMS=>$params);
+        $app->query(CGI->new({authen_username => 'user1', authen_password => '123', 'rm' => 'admin_process'}));
+        response_like(
+                $app,
+                qr{^Set-Cookie: MYAuthCookie=\w{1,2000}%3D%3D; path=/\|Date: \w{3}, \d{2} \w{3} \d{4} \d{1,2}:\d{2}:\d{2} GMT\|Encoding: utf-8\|Content-Type: text/html; charset=utf-8$},
+                $html,
+                'TestApp, authentication success'
+        );
+}
+
         drop_tables($dbh);
 
 }
+
 
 
 sub drop_tables {

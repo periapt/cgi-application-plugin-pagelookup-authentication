@@ -10,11 +10,11 @@ CGI::Application::Plugin::PageLookup::Authentication - Allow a template to check
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -74,7 +74,7 @@ This will return a benign comment if the user is authenticated but will croak ot
 
 sub enforce_protection {
     my $self = shift;
-    unless ($self->{cgiapp}->authen->is_protected_runmode($self->{cgiapp}->get_current_runmode())) {
+    unless ($self->{cgiapp}->authen->is_authenticated) {
 	croak "Attempt to bypass authentication on protected template";
     }
     return "<!-- AUTHENTICATED -->\n";

@@ -10,6 +10,8 @@ use CGI::Application::Plugin::Forward;
 use CGI::Application::Plugin::Authentication;
 use HTML::Template::Pluggable;
 use HTML::Template::Plugin::Dot;
+use CGI::Application::Plugin::ValidateRM;
+use Carp;
 
 sub setup {
         my $self = shift;
@@ -18,9 +20,9 @@ sub setup {
         $self->run_modes(
 		basic_test  => 'basic_test',
 		pagelookup_rm=> 'pagelookup_rm',
-		admin_lookup_rm => 'pagelookup_rm'
-
-		);
+		admin_lookup_rm => 'pagelookup_rm',
+		admin_process=>'admin_process'
+	);
 	$self->authen->protected_runmodes(qr/^admin/);
 	$self->authen->config(
         	DRIVER => [ 'Generic', { user1 => '123' } ],
@@ -58,5 +60,34 @@ sub cgiapp_init {
 	$self->pagelookup_config(%params);
 }
 
+sub admin_process {
+    my $c = shift;
+    my $form_profile = {
+        required=>qw(test_input),
+        untaint_all_constraints => 1,
+        missing_optional_valid => 1,
+        filters => 'trim',
+        msgs => {
+                   any_errors => 'err__',
+                   prefix     => 'err_',
+                   invalid    => 'Invalid',
+                   missing    => 'Missing',
+                   format => '<span class="dfv-errors">%s</span>',
+        },
+    };
+    my ($results, $err_page) = $c->check_rm(
+                sub {
+                        # Need to lookup what the relevant page id was.
+                        my $self = shift;
+                        my $err = shift;
+                        my $template = $self->pagelookup({lang=>'en',internalId=>3});
+                        $template->param(%$err);
+                        return $template->output;
+                },
+                $form_profile
+    );
+    return $err_page if $err_page;
+    croak "was not expecting to get this far";
+}
 
 1
