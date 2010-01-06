@@ -50,6 +50,10 @@ Otherwise the code would be something like:
     motivated by, L<CGI::Application::Plugin::PageLookup> where a run mode is not that granular and the object 
     will be created automatically if it is used by the template.
 
+    There are also 'login_box' and 'logout_form' functions.
+
+    Everything in this module is experimental.
+
 =head1 INTERFACE 
 
 =head2 new
@@ -80,6 +84,32 @@ sub enforce_protection {
     return "<!-- AUTHENTICATED -->\n";
 }
 
+=head2 login_box
+
+Returns the login box associated with the L<CGI::Application::Plugin::Authentication> object.
+
+=cut
+
+sub login_box {
+    my $self = shift;
+    my $authen = $self->{cgiapp}->authen;
+    return $authen->login_box;
+}
+
+=head2 logout_form
+
+Returns the HTML for a form that contains a logout button.
+
+=cut
+
+sub logout_form {
+    my $self = shift;
+    if ($self->{cgiapp}->authen->is_authenticated) {
+       return '<form method="get" action="/logout"><fieldset><input type="submit" value="Logout"/></fieldset></form>';
+    }
+    return '';
+}
+
 =head1 DIAGNOSTICS
 
 =over
@@ -107,7 +137,11 @@ None reported.
 
 =head1 BUGS AND LIMITATIONS
 
-No bugs have been reported.
+The login_box function seems not to work when used with LOGIN_URL but works with LOGIN_RUNMODE.
+This requires more investigation.
+
+I have not documented or written test cases for the login/logout functionality.
+I am also concerned that the HTML is relatively fixed. 
 
 Please report any bugs or feature requests to
 C<bug-cgi-application-plugin-pagelookup-authentication@rt.cpan.org>, or through the web interface at
